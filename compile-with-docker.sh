@@ -104,8 +104,8 @@ broadcast() {
         ENABLE_NOAA=0 \
         ENABLE_FEAT_F4HWN_RESCUE_OPS=0 \
         EDITION_STRING=Broadcast \
-        TARGET=uv-k5-k6_dp32g030_f4hwn_firmware_for_dtrac.broadcast \
-        && cp uv-k5-k6_dp32g030_f4hwn_firmware_for_dtrac.broadcast* compiled-firmware/"
+        TARGET=uv-k5-k6_dp32g030_firmware_for_dtrac.broadcast \
+        && cp uv-k5-k6_dp32g030_firmware_for_dtrac.broadcast* compiled-firmware/"
 }
 
 basic() {
