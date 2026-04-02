@@ -23,7 +23,10 @@
 #include "app/fm.h"
 #endif
 #include "app/uart.h"
-#include "app/app.h" //for DTrac
+#if defined(ENABLE_DTRAC)
+#include "app/app.h"        //for DTrac
+#include "driver/systick.h" //for DTrac
+#endif
 #include "board.h"
 #include "bsp/dp32g030/dma.h"
 #include "bsp/dp32g030/gpio.h"
@@ -34,8 +37,6 @@
 #include "driver/eeprom.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
-// #include "driver/system.h" //for DTrac
-#include "driver/systick.h" //for DTrac
 #include "functions.h"
 #include "misc.h"
 #include "settings.h"
@@ -61,6 +62,9 @@ typedef struct
     uint8_t Padding[2];
     uint16_t ID;
 } Footer_t;
+
+#if defined(ENABLE_DTRAC)
+
 // for DTrac app CTCSS_CODE
 typedef struct
 {
@@ -95,6 +99,8 @@ typedef struct
     Header_t Header;
     char MonitorStatus;
 } CMD_5555_t;
+
+#endif
 
 typedef struct
 {
@@ -291,161 +297,165 @@ static bool IsBadChallenge(const uint32_t *pKey, const uint32_t *pIn, const uint
 }
 #endif
 
+#if defined(ENABLE_DTRAC)
+
 // for DTrac app CTCSS_CODE
 static void CMD_9999(const uint8_t *pBuffer)
 {
-	const CMD_9999_t *pCmd = (const CMD_9999_t *)pBuffer;
-	uint8_t ctcssCode = pCmd->CTCSS_CODE;
-	if (gRxVfo->pTX->Code != ctcssCode)
-	{
-		if (ctcssCode < 99)
-		{
-			gRxVfo->pTX->CodeType = CODE_TYPE_CONTINUOUS_TONE;
-			gRxVfo->pTX->Code = ctcssCode;
-		}
-		else
-		{
-			gRxVfo->pTX->Code = 99; // 修复亚音偶发失步的故障
-			gRxVfo->pTX->CodeType = CODE_TYPE_OFF;
-		}
-		BK4819_SetCTCSSFrequency(CTCSS_Options[ctcssCode]);
-	}
+    const CMD_9999_t *pCmd = (const CMD_9999_t *)pBuffer;
+    uint8_t ctcssCode = pCmd->CTCSS_CODE;
+    if (gRxVfo->pTX->Code != ctcssCode)
+    {
+        if (ctcssCode < 99)
+        {
+            gRxVfo->pTX->CodeType = CODE_TYPE_CONTINUOUS_TONE;
+            gRxVfo->pTX->Code = ctcssCode;
+        }
+        else
+        {
+            gRxVfo->pTX->Code = 99; // 修复亚音偶发失步的故障
+            gRxVfo->pTX->CodeType = CODE_TYPE_OFF;
+        }
+        BK4819_SetCTCSSFrequency(CTCSS_Options[ctcssCode]);
+    }
 }
 
 // for DTrac app downFreq
 static void CMD_8888(const uint8_t *pBuffer)
 {
-	const CMD_8888_t *pCmd = (const CMD_8888_t *)pBuffer;
-	uint32_t downFrequency = pCmd->DownFrequency / 10;
+    const CMD_8888_t *pCmd = (const CMD_8888_t *)pBuffer;
+    uint32_t downFrequency = pCmd->DownFrequency / 10;
 
-	if (gRxVfo->pRX->Frequency != downFrequency)
-	{
-		gRxVfo->pRX->Frequency = downFrequency;
+    if (gRxVfo->pRX->Frequency != downFrequency)
+    {
+        gRxVfo->pRX->Frequency = downFrequency;
 
-		if (!gPttIsPressed)
-		{
-			// BK4819_SetAGC(false);
-			// SYSTICK_DelayUs(10);
+        if (!gPttIsPressed)
+        {
+            // BK4819_SetAGC(false);
+            // SYSTICK_DelayUs(10);
 
-			BK4819_SetFrequency(downFrequency);
-			BK4819_PickRXFilterPathBasedOnFrequency(downFrequency);
+            BK4819_SetFrequency(downFrequency);
+            BK4819_PickRXFilterPathBasedOnFrequency(downFrequency);
 
-			uint16_t reg30 = BK4819_ReadRegister(BK4819_REG_30);
-			if (gMonitor)
-			{
-				BK4819_WriteRegister(BK4819_REG_30, reg30 & ~0x8000);
-				SYSTICK_DelayUs(100);
-				BK4819_WriteRegister(BK4819_REG_30, reg30 | 0x8000);
-				SYSTICK_DelayUs(100);
-				BK4819_WriteRegister(BK4819_REG_30, reg30);
-			}
-			else
-			{
-				// VCO Calibration bit 15 0x8000
-				BK4819_WriteRegister(BK4819_REG_30, reg30 | 0x8000);
-				SYSTICK_DelayUs(100);
-				BK4819_WriteRegister(BK4819_REG_30, reg30);
-			}
+            uint16_t reg30 = BK4819_ReadRegister(BK4819_REG_30);
+            if (gMonitor)
+            {
+                BK4819_WriteRegister(BK4819_REG_30, reg30 & ~0x8000);
+                SYSTICK_DelayUs(100);
+                BK4819_WriteRegister(BK4819_REG_30, reg30 | 0x8000);
+                SYSTICK_DelayUs(100);
+                BK4819_WriteRegister(BK4819_REG_30, reg30);
+            }
+            else
+            {
+                // VCO Calibration bit 15 0x8000
+                BK4819_WriteRegister(BK4819_REG_30, reg30 | 0x8000);
+                SYSTICK_DelayUs(100);
+                BK4819_WriteRegister(BK4819_REG_30, reg30);
+            }
 
-			BK4819_SetAGC(true);
+            BK4819_SetAGC(true);
 
-			SYSTICK_DelayUs(1500);
+            SYSTICK_DelayUs(1500);
 
-			SendVersion();
-		}
+            SendVersion();
+        }
 
-		gUpdateDisplay = true;
-	}
+        gUpdateDisplay = true;
+    }
 }
 
 // for DTrac app upFreq
 static void CMD_7777(const uint8_t *pBuffer)
 {
-	const CMD_7777_t *pCmd = (const CMD_7777_t *)pBuffer;
-	uint32_t upFrequency = pCmd->UpFrequency / 10;
-	if (gRxVfo->pTX->Frequency != upFrequency)
-	{
-		gRxVfo->pTX->Frequency = upFrequency;
+    const CMD_7777_t *pCmd = (const CMD_7777_t *)pBuffer;
+    uint32_t upFrequency = pCmd->UpFrequency / 10;
+    if (gRxVfo->pTX->Frequency != upFrequency)
+    {
+        gRxVfo->pTX->Frequency = upFrequency;
 
-		if (gPttIsPressed)
-		{
-			BK4819_PickRXFilterPathBasedOnFrequency(upFrequency);
-			BK4819_SetFrequency(upFrequency);
+        if (gPttIsPressed)
+        {
+            BK4819_PickRXFilterPathBasedOnFrequency(upFrequency);
+            BK4819_SetFrequency(upFrequency);
 
-			uint16_t reg30 = BK4819_ReadRegister(BK4819_REG_30);
+            uint16_t reg30 = BK4819_ReadRegister(BK4819_REG_30);
 
-			// VCO Calibration bit 15 0x8000
-			BK4819_WriteRegister(BK4819_REG_30, reg30 | 0x8000);
-			SYSTICK_DelayUs(100);
-			BK4819_WriteRegister(BK4819_REG_30, reg30);
+            // VCO Calibration bit 15 0x8000
+            BK4819_WriteRegister(BK4819_REG_30, reg30 | 0x8000);
+            SYSTICK_DelayUs(100);
+            BK4819_WriteRegister(BK4819_REG_30, reg30);
 
-			SYSTICK_DelayUs(1500);
-		}
+            SYSTICK_DelayUs(1500);
+        }
 
-		gUpdateDisplay = true;
-	}
+        gUpdateDisplay = true;
+    }
 }
 
 // for DTrac app mode
 static void CMD_6666(const uint8_t *pBuffer)
 {
-	const CMD_6666_t *pCmd = (const CMD_6666_t *)pBuffer;
-	// char mode = pCmd->Mode;
-	uint8_t mode;
-	switch (pCmd->Mode)
-	{
-	case 'F':
-		mode = MODULATION_FM;
-		break;
-	case 'A':
-		mode = MODULATION_AM;
-		break;
-	case 'U':
-		mode = MODULATION_USB;
-		break;
+    const CMD_6666_t *pCmd = (const CMD_6666_t *)pBuffer;
+    // char mode = pCmd->Mode;
+    uint8_t mode;
+    switch (pCmd->Mode)
+    {
+    case 'F':
+        mode = MODULATION_FM;
+        break;
+    case 'A':
+        mode = MODULATION_AM;
+        break;
+    case 'U':
+        mode = MODULATION_USB;
+        break;
 #ifdef ENABLE_BYP_RAW_DEMODULATORS
-	case 'B':
-		mode = MODULATION_BYP;
-		break;
-	case 'R':
-		mode = MODULATION_RAW;
-		break;
+    case 'B':
+        mode = MODULATION_BYP;
+        break;
+    case 'R':
+        mode = MODULATION_RAW;
+        break;
 #endif
-	default:
-		mode = MODULATION_FM;
-		break;
-	}
-	if (gRxVfo->Modulation != mode)
-	{
-		gRxVfo->Modulation = mode;
-		RADIO_SetModulation(mode);
-	}
+    default:
+        mode = MODULATION_FM;
+        break;
+    }
+    if (gRxVfo->Modulation != mode)
+    {
+        gRxVfo->Modulation = mode;
+        RADIO_SetModulation(mode);
+    }
 
-	gUpdateDisplay = true;
+    gUpdateDisplay = true;
 }
 
 // for DTrac app MONITOR
 char lastMonitorStatus = 'U';
 static void CMD_5555(const uint8_t *pBuffer)
 {
-	const CMD_5555_t *pCmd = (const CMD_5555_t *)pBuffer;
+    const CMD_5555_t *pCmd = (const CMD_5555_t *)pBuffer;
 
-	if (lastMonitorStatus != pCmd->MonitorStatus)
-	{
-		switch (pCmd->MonitorStatus)
-		{
-		case 'Y':
-			RADIO_SetupRegisters(true);
-			APP_StartListening(FUNCTION_MONITOR);
-			break;
-		case 'N':
-			RADIO_SetupRegisters(true);
-			APP_StartListening(FUNCTION_RECEIVE);
+    if (lastMonitorStatus != pCmd->MonitorStatus)
+    {
+        switch (pCmd->MonitorStatus)
+        {
+        case 'Y':
+            RADIO_SetupRegisters(true);
+            APP_StartListening(FUNCTION_MONITOR);
             break;
-		}
-		lastMonitorStatus = pCmd->MonitorStatus;
-	}
+        case 'N':
+            RADIO_SetupRegisters(true);
+            APP_StartListening(FUNCTION_RECEIVE);
+            break;
+        }
+        lastMonitorStatus = pCmd->MonitorStatus;
+    }
 }
+
+#endif
 
 // session init, sends back version info and state
 // timestamp is a session id really
@@ -796,6 +806,8 @@ void UART_HandleCommand(void)
 {
     switch (UART_Command.Header.ID)
     {
+#if defined(ENABLE_DTRAC)
+
     case 0x9999:
         CMD_9999(UART_Command.Buffer); // for DTrac app TX CTCSS
         break;
@@ -815,6 +827,8 @@ void UART_HandleCommand(void)
     case 0x5555:
         CMD_5555(UART_Command.Buffer); // for DTrac app MONITOR
         break;
+
+#endif
 
     case 0x0514:
         CMD_0514(UART_Command.Buffer);
