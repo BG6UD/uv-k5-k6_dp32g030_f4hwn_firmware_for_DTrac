@@ -7,7 +7,7 @@
 - 实时同步通联模式参数；
 - 实时同步发射亚音参数；
 - 卫星入境时自动开启监听，离境后自动关闭监听；
-注：由于泉盛UV-K5/K6/K1硬件限制，除FM外的模式仅对接收信道有效。
+- 注：由于泉盛UV-K5/K6/K1硬件限制，除FM外的模式仅对接收信道有效。
 
 - DTrac APP 下载地址： https://www.dtrac.cn/lib/exe/fetch.php?media=dtrac.apk
 
