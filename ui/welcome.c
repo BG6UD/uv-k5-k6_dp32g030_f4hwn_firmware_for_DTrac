@@ -207,7 +207,7 @@ void UI_DisplayWelcome(void)
 #if defined(ENABLE_DTRAC)
         UI_PrintStringSmallNormal(Version, 0, 127, 6);
 #else
-        UI_PrintStringSmallNormal("for DTrac v1.0", 0, 127, 5);
+        UI_PrintStringSmallNormal("for DTrac v1.0.1", 0, 127, 5);
 #endif
 
 #endif
