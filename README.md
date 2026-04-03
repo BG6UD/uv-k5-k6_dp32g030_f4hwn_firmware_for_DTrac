@@ -17,7 +17,11 @@
   <img src="https://dtrac.cn/lib/exe/fetch.php?media=topologymap.png" width="60%">
 </div>
 
-# 视频演示： https://v.douyin.com/HZP32rpPb0Q/ 
+# 视频演示： 
+
+<video controls src="https://dtrac.cn/lib/exe/fetch.php?media=dtrac_quansheng_uvk6.mp4" width="60%"></video>
+
+https://v.douyin.com/HZP32rpPb0Q/ 
 
 # Stats
 
