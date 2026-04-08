@@ -2134,7 +2134,7 @@ static void ProcessKey(KEY_Code_t Key, bool bKeyPressed, bool bKeyHeld)
 
 Skip:
     if (gBeepToPlay != BEEP_NONE) {
-        AUDIO_PlayBeep(gBeepToPlay);//for DTrac
+        AUDIO_PlayBeep(gBeepToPlay);
         gBeepToPlay = BEEP_NONE;
     }
 
@@ -2260,3 +2260,4 @@ Skip:
 
     gUpdateDisplay = true;
 }
+

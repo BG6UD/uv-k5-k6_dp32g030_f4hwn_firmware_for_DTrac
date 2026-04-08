@@ -890,3 +890,4 @@ void UART_HandleCommand(void)
     gUART_LockScreenshot = 20; // lock screenshot
 #endif
 }
+
